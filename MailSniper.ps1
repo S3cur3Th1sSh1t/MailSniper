@@ -1030,8 +1030,7 @@ function Invoke-SelfSearch{
     }
    } 
 
-  $PostSearchList | out-string -Width 4096 > C:\temp\mails3.txt
-  $PostSearchList | out-string -Width 4096 | ft -Property Subject,Body
+  $PostSearchList | ft -Property Sender,ReceivedBy,Subject,Body | Out-String -Width 4096
   if ($OutputCsv -ne "")
   { 
     $PostSearchList | %{ $_.Body = $_.Body -replace "`r`n",'\n' -replace ",",'&#44;'}
